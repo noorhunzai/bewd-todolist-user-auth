@@ -2,6 +2,10 @@ Rails.application.routes.draw do
   get 'sessions/users'
 
   root 'homepage#index'
+  get '/authenticated', to: 'sessions#authenticated'
+  post '/users' => 'users#create'
+  post '/sessions' => 'sessions#create'
+
 
   # Add routes below this line
 

@@ -1,49 +1,48 @@
 require 'rails_helper'
 
 RSpec.describe SessionsController, type: :controller do
-  render_views
-
   describe 'POST /sessions' do
     it 'renders new session object' do
-      FactoryBot.create(:user, username: 'asdasdasd', password: 'asdasdasd')
+      user = FactoryBot.create(:user, username: 'asdasdasd', password: 'asdasdasd')
 
       post :create, params: {
-        user: {
-          username: 'asdasdasd',
-          password: 'asdasdasd'
-        }
+        username: 'asdasdasd',
+        password: 'asdasdasd'
       }
 
-      expect(response.body).to eq({
-        success: true
-      }.to_json)
+      session = Session.last # Fetch the latest session object from the database
+
+      expect(response.body).to eq({ success: true, session_token: session.token }.to_json)
     end
   end
 
   describe 'GET /authenticated' do
+    let(:user) { FactoryBot.create(:user, username: 'user1', password: 'password') }
+
     it 'renders authenticated user object' do
-      user = FactoryBot.create(:user)
       session = user.sessions.create
-      @request.cookie_jar.signed['todolist_session_token'] = session.token
+      get :authenticated, params: { session_token: session.token }
+      expect(response.body).to eq({ authenticated: true, username: 'user1' }.to_json)
+    end
 
+    it 'renders unauthenticated user object' do
       get :authenticated
-
-      expect(response.body).to eq({
-        authenticated: true,
-        username: user.username
-      }.to_json)
+      expect(response.body).to eq({ authenticated: false, username: nil }.to_json)
     end
   end
 
   describe 'DELETE /sessions' do
+    let(:user) { FactoryBot.create(:user, username: 'user1', password: 'password') }
+
     it 'renders success' do
-      user = FactoryBot.create(:user)
       session = user.sessions.create
-      @request.cookie_jar.signed['todolist_session_token'] = session.token
+      delete :destroy, params: { session_token: session.token }
+      expect(response.body).to eq({ success: true }.to_json)
+    end
 
-      delete :destroy
-
-      expect(user.sessions.count).to be(0)
+    it 'renders failure for invalid session token' do
+      delete :destroy, params: { session_token: 'invalid_token' }
+      expect(response.body).to eq({ success: false }.to_json)
     end
   end
 end

@@ -9,7 +9,7 @@ class TasksController < ApplicationController
     session = Session.find_by(token: token)
 
     if session
-      @tasks = session.user.tasks
+      @tasks = User.find(session.user_id).tasks
       render 'tasks/index' # can be omitted
     else
       render json: { tasks: [] }
@@ -21,7 +21,7 @@ class TasksController < ApplicationController
     session = Session.find_by(token: token)
 
     if session
-      user = session.user
+      user = User.find(session.user_id)
       @task = user.tasks.new(task_params)
 
       if @task.save
